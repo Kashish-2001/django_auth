@@ -11,12 +11,11 @@ class UserSerializer(ModelSerializer):
         }
 
     def create(self, validated_data):
-        print('hii')
         password = validated_data.pop('password', None)
         instance = self.Meta.model(**validated_data)
         if password is not None:
             instance.set_password(password)
-            print(password)
         instance.save()
+        # print('instance: ', instance.password)
         return instance
 
