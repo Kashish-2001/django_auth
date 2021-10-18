@@ -3,7 +3,9 @@ from .models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework import status, permissions
 
 
 def get_tokens_for_user(user):
@@ -13,6 +15,15 @@ def get_tokens_for_user(user):
         'refresh_token': str(refresh),
         'access_token': str(refresh.access_token),
     }
+
+
+def get_user_from_token(request):
+    jwt = JWTAuthentication()
+    header = jwt.get_header(request)
+    raw_token = jwt.get_raw_token(header)
+    validated_token = jwt.get_validated_token(raw_token)
+    user = jwt.get_user(validated_token)
+    return user
 
 
 class RegisterView(APIView):
@@ -52,7 +63,11 @@ class LoginView(APIView):
 
 
 class GetUser(APIView):
-    def get(self, request):
-        print('request: ',  request.headers['Authorization'])
-        return Response("This is to return user data")
+    permission_classes = [permissions.IsAuthenticated]
 
+    @staticmethod
+    def get(request):
+        user = get_user_from_token(request)
+        print('user:', user)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
